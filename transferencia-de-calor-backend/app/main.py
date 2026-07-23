@@ -31,34 +31,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+has_static = os.path.exists(static_dir)
+
+# ── API endpoints bajo /api ──
+@app.get("/api")
 def read_root():
     return {"message": "Bienvenido al Simulador de Transferencia de Calor API v2.0"}
 
-@app.get("/materiales", response_model=List[Material])
+@app.get("/api/materiales", response_model=List[Material])
 def get_materiales():
     return [Material(**mat_data) for mat_data in MATERIALES.values()]
 
-@app.post("/calcular-conduccion", response_model=HeatCalculationResponse)
+@app.post("/api/calcular-conduccion", response_model=HeatCalculationResponse)
 def calcular_conduccion(request: HeatCalculationRequest):
     return CalorService.calculate_heat_loss(request)
 
-@app.post("/calcular-conveccion", response_model=ConveccionResponse)
+@app.post("/api/calcular-conveccion", response_model=ConveccionResponse)
 def calcular_conveccion(request: ConveccionRequest):
     return ConveccionService.calculate(request)
 
-@app.post("/calcular-radiacion", response_model=RadiacionResponse)
+@app.post("/api/calcular-radiacion", response_model=RadiacionResponse)
 def calcular_radiacion(request: RadiacionRequest):
     return RadiacionService.calculate(request)
 
-@app.get("/info")
+@app.get("/api/info")
 def get_info():
     return {
         "endpoints": {
-            "GET /materiales": "Lista de materiales disponibles",
-            "POST /calcular-conduccion": "Cálculo de conducción (Ley de Fourier)",
-            "POST /calcular-conveccion": "Cálculo de convección (Ley de Newton)",
-            "POST /calcular-radiacion": "Cálculo de radiación (Ley de Stefan-Boltzmann)"
+            "GET /api/materiales": "Lista de materiales disponibles",
+            "POST /api/calcular-conduccion": "Cálculo de conducción (Ley de Fourier)",
+            "POST /api/calcular-conveccion": "Cálculo de convección (Ley de Newton)",
+            "POST /api/calcular-radiacion": "Cálculo de radiación (Ley de Stefan-Boltzmann)"
         },
         "mecanismos": [
             {"id": "conduccion", "nombre": "Conducción", "ley": "Ley de Fourier", "formula": "Q = k·A·ΔT / L"},
@@ -67,16 +71,20 @@ def get_info():
         ]
     }
 
-# ────────────────────────────────────────────────────────────────
-# Servir Frontend Estático (React build)
-# ────────────────────────────────────────────────────────────────
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-if os.path.exists(static_dir):
-    # Montar assets estáticos (JS, CSS, imágenes)
+# ── Servir Frontend Estático (React build) ──
+if has_static:
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
+    # favicon y otros recursos públicos
+    public_dir = os.path.join(static_dir, "..", "transferencia-de-calor-frontend", "public")
+    if os.path.exists(public_dir):
+        app.mount("/", StaticFiles(directory=public_dir, html=False), name="public")
 
-    # Servir index.html para cualquier ruta (SPA)
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
+        file_path = os.path.join(static_dir, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
         index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
         return FileResponse(index_path)
