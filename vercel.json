@@ -1,0 +1,11 @@
+{
+  "installCommand": "cd transferencia-de-calor-frontend && npm install",
+  "buildCommand": "cd transferencia-de-calor-frontend && npx vite build",
+  "outputDirectory": "transferencia-de-calor-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

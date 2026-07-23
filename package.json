@@ -1,0 +1,8 @@
+{
+  "name": "transmision-de-calor",
+  "private": true,
+  "scripts": {
+    "install": "cd transferencia-de-calor-frontend && npm install",
+    "build": "cd transferencia-de-calor-frontend && npm run build"
+  }
+}
