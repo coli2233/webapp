@@ -1,4 +1,7 @@
 #!/bin/bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+set -e
+cd /home/site/wwwroot
+export PORT=${PORT:-8000}
+python -m pip install --disable-pip-version-check --upgrade pip
+python -m pip install --disable-pip-version-check -r requirements.txt
+python -m gunicorn --bind 0.0.0.0:${PORT} --timeout 600 --worker-class uvicorn.workers.UvicornWorker app.main:app
