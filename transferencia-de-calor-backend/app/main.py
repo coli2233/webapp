@@ -73,18 +73,26 @@ def get_info():
 
 # ── Servir Frontend Estático (React build) ──
 if has_static:
+    # Montar assets (JS, CSS) y archivos públicos (favicon, icons)
     app.mount("/assets", StaticFiles(directory=os.path.join(static_dir, "assets")), name="assets")
-    # favicon y otros recursos públicos
-    public_dir = os.path.join(static_dir, "..", "transferencia-de-calor-frontend", "public")
-    if os.path.exists(public_dir):
-        app.mount("/", StaticFiles(directory=public_dir, html=False), name="public")
-
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        file_path = os.path.join(static_dir, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
+    
+    # Servir index.html en la raíz
+    @app.get("/")
+    async def serve_index():
         index_path = os.path.join(static_dir, "index.html")
         if os.path.exists(index_path):
             return FileResponse(index_path)
-        return FileResponse(index_path)
+        return {"detail": "Frontend no construido"}
+
+    # Servir archivos estáticos y SPA para cualquier otra ruta
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        # Servir archivos directos del static (favicon.svg, icons.svg, etc.)
+        file_path = os.path.join(static_dir, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Cualquier otra ruta → SPA (index.html)
+        index_path = os.path.join(static_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"detail": "Not found"}

@@ -18,6 +18,11 @@ const MECHANISM_LABELS = {
   radiacion: { name: 'Radiación', icon: '☀️', formula: 'Q = ε·σ·A·(T₁⁴-T₂⁴)', color: '#fbbf24', desc: 'Transferencia por ondas electromagnéticas' },
 };
 
+const isMobile = () => {
+  if (typeof window === 'undefined') return false;
+  return window.innerWidth <= 768 || navigator.maxTouchPoints > 0;
+};
+
 /** Misma lógica que la etiqueta de aislamiento del panel (R = L / k·A). */
 const getWallInsulation = (matBlocks, thickness, area) => {
   if (!matBlocks.length) return { level: 'none', R_total: 0 };
@@ -114,8 +119,11 @@ export const SimulatorSandbox = ({ externalActiveMechanism, onMechanismChange })
   // Add block at specific canvas position
   const addBlockAt = useCallback((type, canvasX, canvasY) => {
     const blockType = BLOCK_TYPES[type];
-    const bw = type.includes('SOURCE') || type === 'SUN' ? 70 : 90;
-    const bh = type.includes('SOURCE') || type === 'SUN' ? 70 : 60;
+    const isSource = ['HEAT_SOURCE', 'COLD_SOURCE', 'SUN'].includes(type);
+    const isMaterial = ['CONDUCTOR', 'INSULATOR', 'CARDBOARD', 'WALL', 'WINDOW'].includes(type);
+    const bw = isSource ? 70 : 90;
+    const bh = isSource ? 70 : 60;
+
     const newBlock = {
       id: `block_${blockIdRef.current++}`,
       type,
@@ -125,7 +133,17 @@ export const SimulatorSandbox = ({ externalActiveMechanism, onMechanismChange })
       temp: blockType.defaultTemp ?? 25,
       color: blockType.color,
     };
-    setPlacedBlocks(prev => [...prev, newBlock]);
+
+    setPlacedBlocks(prev => {
+      let next = [...prev];
+      if (isSource) {
+        next = next.filter(b => !['HEAT_SOURCE', 'COLD_SOURCE', 'SUN'].includes(b.type));
+      }
+      if (isMaterial) {
+        next = next.filter(b => !['CONDUCTOR', 'INSULATOR', 'CARDBOARD', 'WALL', 'WINDOW'].includes(b.type));
+      }
+      return [...next, newBlock];
+    });
     setSelectedBlock(newBlock.id);
     playDropSound(type);
   }, []);
@@ -133,23 +151,40 @@ export const SimulatorSandbox = ({ externalActiveMechanism, onMechanismChange })
 
   const removeBlock = (id) => {
     const block = placedBlocks.find(b => b.id === id);
-    const isSource = block && (block.type === 'HEAT_SOURCE' || block.type === 'COLD_SOURCE' || block.type === 'SUN');
-    if (isSource) {
-      if (!confirm('¿Eliminar fuente de energia? Esto puede afectar los calculos.')) return;
-    }
+    if (!block) return;
+    const isSource = block.type === 'HEAT_SOURCE' || block.type === 'COLD_SOURCE' || block.type === 'SUN';
+    // No permitir eliminar fuentes de energía individualmente
+    if (isSource) return;
     setPlacedBlocks(prev => prev.filter(b => b.id !== id));
     if (selectedBlock === id) setSelectedBlock(null);
   };
 
-  // ========== DRAG AND DROP WITH MOUSE EVENTS ==========
+  // ========== DRAG AND DROP WITH MOUSE & TOUCH EVENTS ==========
   const handlePaletteMouseDown = (e, blockType) => {
     e.preventDefault();
     setDragging({ blockType, offsetX: e.nativeEvent.offsetX, offsetY: e.nativeEvent.offsetY });
   };
 
+  // Soporte táctil para arrastrar
+  const handlePaletteTouchStart = (e, blockType) => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetX = touch.clientX - rect.left;
+    const offsetY = touch.clientY - rect.top;
+    setDragging({ blockType, offsetX, offsetY });
+  };
+
   const handleMouseMove = useCallback((e) => {
     if (!dragging) return;
     setDragging(prev => prev ? { ...prev, mouseX: e.clientX, mouseY: e.clientY } : null);
+  }, [dragging]);
+
+  const handleTouchMove = useCallback((e) => {
+    if (!dragging) return;
+    e.preventDefault(); // Evitar scroll mientras se arrastra
+    const touch = e.touches[0];
+    setDragging(prev => prev ? { ...prev, mouseX: touch.clientX, mouseY: touch.clientY } : null);
   }, [dragging]);
 
   const handleMouseUp = useCallback((e) => {
@@ -165,16 +200,35 @@ export const SimulatorSandbox = ({ externalActiveMechanism, onMechanismChange })
     setDragging(null);
   }, [dragging, addBlockAt]);
 
+  const handleTouchEnd = useCallback((e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (rect && e.changedTouches.length > 0) {
+      const touch = e.changedTouches[0];
+      const mx = touch.clientX - rect.left;
+      const my = touch.clientY - rect.top;
+      if (mx >= 0 && mx <= rect.width && my >= 0 && my <= rect.height) {
+        addBlockAt(dragging.blockType, mx, my);
+      }
+    }
+    setDragging(null);
+  }, [dragging, addBlockAt]);
+
   useEffect(() => {
     if (dragging) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
       return () => {
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('touchmove', handleTouchMove);
+        window.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [dragging, handleMouseMove, handleMouseUp]);
+  }, [dragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   // Canvas animation
   useEffect(() => {
@@ -1057,13 +1111,25 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
     const insulatorBlock = placedBlocks.find(b => b.type === 'INSULATOR');
     const cardboardBlock = placedBlocks.find(b => b.type === 'CARDBOARD');
 
-    if (!heatSource && !sunSource) {
-      setResults({ error: '⚠️ Agrega al menos una fuente de calor (🔥 o ☀️) al canvas' });
+    const sourceBlocks = [heatSource, coldSource, sunSource].filter(Boolean);
+    if (sourceBlocks.length === 0) {
+      setResults({ error: '⚠️ Agrega al menos una fuente de energía (🔥, ❄️ o ☀️) al canvas' });
       return;
     }
 
-    const T_hot = heatSource?.temp ?? sunSource?.temp ?? 100;
-    const T_cold = coldSource?.temp ?? 20;
+    // Determinar temperatura exterior (lado izquierdo) e interior (lado derecho)
+    // basado en posición del bloque (x < 45% w = exterior, x > 55% w = interior)
+    const T_AMBIENT = 20; // °C referencia cuando un lado no tiene fuente
+    const extSources = sourceBlocks.filter(b => b.x < canvasRef.current?.clientWidth * 0.45);
+    const intSources = sourceBlocks.filter(b => b.x > canvasRef.current?.clientWidth * 0.55);
+
+    const avg = arr => arr.length ? arr.reduce((s, b) => s + (b.temp ?? 20), 0) / arr.length : null;
+    let T_ext = avg(extSources) ?? T_AMBIENT;
+    let T_int = avg(intSources) ?? T_AMBIENT;
+
+    // Convención: Q = (T_exterior - T_interior) / R
+    // Q > 0: calor fluye del exterior hacia el interior (exterior más caliente)
+    // Q < 0: calor fluye del interior hacia el exterior (interior más caliente)
     const A = globalParams.area;
 
     if (mechanism === 'conduccion') {
@@ -1095,52 +1161,65 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
         item.percent = ((item.r / R_total) * 100).toFixed(1);
       });
 
-      const Q = (T_hot - T_cold) / R_total;
-      
-      // Calculate equivalent k for display
+      const Q = (T_ext - T_int) / R_total;  // ΔT = T_ext - T_int
+      const Q_abs = Math.abs(Q);  // magnitud del flujo
       const k_eq = (materialBlocks.length * L) / (R_total * A);
+      const direction = Q > 0 ? '↗️ Calor fluye del exterior al interior (exterior más caliente)'
+                      : Q < 0 ? '↙️ Frío fluye del exterior al interior (exterior más frío)'
+                              : '➖ Equilibrio térmico';
 
       setResults({
         Q_watts: Q.toFixed(1),
+        Q_abs_watts: Q_abs.toFixed(1),  // valor absoluto para mostrar
         Q_joules_hr: (Q * 3600).toFixed(0),
         k: materialBlocks.length > 1 ? k_eq.toFixed(3) + ' (eq)' : k_values[0],
         L: (L * materialBlocks.length).toFixed(2), 
-        A, T_hot, T_cold,
+        A, T_ext, T_int,
         resistance: R_total.toFixed(4),
         breakdown: breakdown,
         suggestion: R_total > 1
           ? '✅ Buena resistencia térmica global. El sistema está bien aislado.'
-          : '⚠️ Baja resistencia térmica. Se escapa mucho calor, considera agregar mejores aislantes.',
+          : '⚠️ Baja resistencia térmica. Se escapa mucho calor/frío, considera agregar mejores aislantes.',
         formula: materialBlocks.length > 1 
-          ? `Q = ΔT / R_total = (${T_hot}-${T_cold}) / ${R_total.toFixed(4)} = ${Q.toFixed(1)} W`
-          : `Q = ${k_values[0]} · ${A} · (${T_hot}-${T_cold}) / ${L} = ${Q.toFixed(1)} W`,
+          ? `Q = ΔT / R_total = (T_ext=${T_ext} - T_int=${T_int}) / ${R_total.toFixed(4)} = ${Q.toFixed(1)} W\n${direction}`
+          : `Q = ${k_values[0]} · ${A} · (T_ext=${T_ext} - T_int=${T_int}) / ${L} = ${Q.toFixed(1)} W\n${direction}`,
       });
     } else if (mechanism === 'conveccion') {
       const h = 10 + globalParams.velocity * 5;
-      const Q = h * A * (T_hot - T_cold);
+      const Q = h * A * (T_ext - T_int);  // ΔT = T_ext - T_int
+      const Q_abs = Math.abs(Q);
+      const direction = Q > 0 ? '↗️ Calor fluye del exterior al interior (exterior más caliente)'
+                      : Q < 0 ? '↙️ Frío fluye del exterior al interior (exterior más frío)'
+                              : '➖ Equilibrio térmico';
       setResults({
         Q_watts: Q.toFixed(1),
+        Q_abs_watts: Q_abs.toFixed(1),
         Q_joules_hr: (Q * 3600).toFixed(0),
-        h, A, T_hot, T_cold,
-        suggestion: Q > 500
-          ? '🔥 Convección intensa. El aire transporta mucho calor. Usa barreras.'
+        h, A, T_ext, T_int,
+        suggestion: Math.abs(Q) > 500
+          ? '🔥 Convección intensa. El aire transporta mucho calor/frío. Usa barreras.'
           : '💨 Flujo moderado. Reduce la velocidad del aire para menor transferencia.',
-        formula: `Q = ${h.toFixed(0)} · ${A} · (${T_hot}-${T_cold}) = ${Q.toFixed(1)} W`,
+        formula: `Q = ${h.toFixed(0)} · ${A} · (T_ext=${T_ext} - T_int=${T_int}) = ${Q.toFixed(1)} W\n${direction}`,
       });
     } else {
       const sigma = 5.67e-8;
       const eps = globalParams.emissivity;
-      const T1K = T_hot + 273.15;
-      const T2K = T_cold + 273.15;
+      const T1K = T_ext + 273.15;
+      const T2K = T_int + 273.15;
       const Q = eps * sigma * A * (T1K ** 4 - T2K ** 4);
+      const Q_abs = Math.abs(Q);
+      const direction = Q > 0 ? '↗️ Calor radiante del exterior al interior (exterior más caliente)'
+                      : Q < 0 ? '↙️ Frío radiante del exterior al interior (exterior más frío)'
+                              : '➖ Equilibrio térmico';
       setResults({
         Q_watts: Q.toFixed(1),
+        Q_abs_watts: Q_abs.toFixed(1),
         Q_joules_hr: (Q * 3600).toFixed(0),
-        eps, A, T_hot, T_cold,
+        eps, A, T_ext, T_int,
         suggestion: eps > 0.8
           ? '☀️ Alta emisividad. El cuerpo se comporta casi como cuerpo negro.'
           : '🔇 Baja emisividad. Superficie reflectora. Minimiza pérdidas por radiación.',
-        formula: `Q = ${eps} · ${sigma.toExponential(1)} · ${A} · (${T1K.toFixed(0)}⁴-${T2K.toFixed(0)}⁴) = ${Q.toFixed(1)} W`,
+        formula: `Q = ${eps} · ${sigma.toExponential(1)} · ${A} · (${T1K.toFixed(0)}⁴-${T2K.toFixed(0)}⁴) = ${Q.toFixed(1)} W\n${direction}`,
       });
     }
   };
@@ -1165,6 +1244,7 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
                   <div key={id} className={styles.paletteBlock}
                     style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
                     onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
                   >
                     <div className={styles.paletteBlockIcon}>{b.icon}</div>
                     <div className={styles.paletteBlockLabel}>{b.label}</div>
@@ -1184,6 +1264,7 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
                   <div key={id} className={styles.paletteBlock}
                     style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
                     onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
                   >
                     <div className={styles.paletteBlockIcon}>{b.icon}</div>
                     <div className={styles.paletteBlockLabel}>{b.label}</div>
@@ -1203,6 +1284,7 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
                   <div key={id} className={styles.paletteBlock}
                     style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
                     onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
                   >
                     <div className={styles.paletteBlockIcon}>{b.icon}</div>
                     <div className={styles.paletteBlockLabel}>{b.label}</div>
@@ -1247,7 +1329,7 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
 
         {placedBlocks.length === 0 && (
           <div className={styles.canvasHint}>
-            🖱️ Arrastra los bloques de la izquierda hacia el canvas
+            {isMobile() ? '👆 Toca y arrastra los bloques al canvas' : '🖱️ Arrastra los bloques de la izquierda hacia el canvas'}
           </div>
         )}
       </div>
@@ -1360,12 +1442,14 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
                   }}>{badgeText}</div>
                 </div>
               )}
-              <button onClick={() => removeBlock(selectedBlockData.id)} style={{
-                marginTop: '10px', width: '100%', padding: '7px',
-                background: 'rgba(239,68,68,0.1)', color: '#f87171',
-                border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px',
-                cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
-              }}>🗑️ Eliminar bloque</button>
+              {!['HEAT_SOURCE', 'COLD_SOURCE', 'SUN'].includes(selectedBlockData.type) && (
+                <button onClick={() => removeBlock(selectedBlockData.id)} style={{
+                  marginTop: '10px', width: '100%', padding: '7px',
+                  background: 'rgba(239,68,68,0.1)', color: '#f87171',
+                  border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px',
+                  cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
+                }}>🗑️ Eliminar bloque</button>
+              )}
             </div>
           );
         })()}

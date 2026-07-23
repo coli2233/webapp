@@ -985,7 +985,7 @@
 
 /* ========== RESPONSIVE ========== */
 
-/* ── Tablet: 768px - 1024px ──────────────────────────────── */
+/* ── Tablet: ≤ 1024px ──────────────────────────────── */
 @media (max-width: 1024px) {
   .sandboxRoot {
     flex-direction: column;
@@ -994,7 +994,7 @@
   .blockPalette {
     width: 100%;
     min-width: 0;
-    max-height: 160px;
+    max-height: 140px;
     flex-shrink: 0;
     flex-direction: row;
     padding: 8px 12px;
@@ -1084,6 +1084,12 @@
     gap: 4px;
   }
 
+  .clearBtn,
+  .calcBtn {
+    padding: 6px 14px;
+    font-size: 0.78rem;
+  }
+
   /* Results panel */
   .resultsPanel {
     width: 100%;
@@ -1117,35 +1123,35 @@
   }
 
   .header {
-    height: 52px;
-    min-height: 52px;
-    padding: 0 0.75rem;
+    height: 48px;
+    min-height: 48px;
+    padding: 0 0.6rem;
   }
 
   .title {
-    font-size: 0.95rem;
-    gap: 0.4rem;
+    font-size: 0.82rem;
+    gap: 0.35rem;
   }
 
   .iconWrapper {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
 
   .theoryBtn {
-    padding: 0.4rem 0.75rem;
-    font-size: 0.72rem;
-    gap: 0.3rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.65rem;
+    gap: 0.25rem;
   }
   .theoryBtn svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
 
-  /* Palette becomes horizontal scroll strip */
+  /* Palette horizontal scroll strip */
   .blockPalette {
-    max-height: 110px;
-    padding: 6px 8px;
+    max-height: 100px;
+    padding: 5px 6px;
   }
 
   .paletteSectionLabel {
@@ -1153,12 +1159,13 @@
   }
 
   .blockGrid {
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
   }
 
   .paletteBlock {
-    padding: 4px 6px;
-    min-height: 40px;
+    padding: 4px 5px;
+    min-height: 38px;
     border-radius: 6px;
     border-width: 1.5px;
     gap: 1px;
@@ -1169,12 +1176,17 @@
   }
 
   .paletteBlockLabel {
-    font-size: 0.52rem;
+    font-size: 0.48rem;
+  }
+
+  .paletteBlockK,
+  .paletteBlockDesc {
+    display: none;
   }
 
   /* Canvas toolbar */
   .canvasToolbar {
-    padding: 6px 8px;
+    padding: 5px 8px;
     gap: 4px;
   }
 
@@ -1196,7 +1208,7 @@
   .clearBtn,
   .calcBtn {
     padding: 5px 10px;
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     border-radius: 6px;
   }
 
@@ -1210,79 +1222,79 @@
   }
 
   .canvasHint {
-    font-size: 0.75rem;
-    max-width: 240px;
+    font-size: 0.7rem;
+    max-width: 200px;
   }
 
   /* Results - horizontal scroll */
   .resultsPanel {
-    max-height: 160px;
-    padding: 8px 10px;
-    gap: 6px;
+    max-height: 150px;
+    padding: 6px 8px;
+    gap: 5px;
   }
 
   .resultsPanel > * {
-    min-width: 160px;
-    font-size: 0.7rem;
+    min-width: 150px;
+    font-size: 0.65rem;
   }
 
   /* Modal */
   .modalContent {
-    padding: 1.5rem;
+    padding: 1.25rem;
     max-width: 95vw;
     width: 95%;
     border-radius: var(--radius-lg);
   }
 
   .modalTitle {
-    font-size: 1.15rem;
-    margin-bottom: 1rem;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .modalSectionTitle {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .modalText {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
 
   .formulaBox {
-    font-size: 1.1rem;
-    padding: 0.75rem;
+    font-size: 0.95rem;
+    padding: 0.6rem;
   }
 
   .modalList {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     padding-left: 1rem;
-    line-height: 1.8;
+    line-height: 1.7;
   }
 
   .closeBtn {
-    padding: 0.7rem;
-    font-size: 0.85rem;
+    padding: 0.6rem;
+    font-size: 0.8rem;
   }
 
   /* General */
   .card {
-    padding: 0.75rem;
+    padding: 0.6rem;
   }
 
   .tempLabel {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 }
 
 /* ── Very small screens: ≤ 480px ─────────────────────────── */
 @media (max-width: 480px) {
   .header {
-    height: 44px;
-    min-height: 44px;
-    padding: 0 0.5rem;
+    height: 42px;
+    min-height: 42px;
+    padding: 0 0.4rem;
   }
 
   .title {
-    font-size: 0.78rem;
+    font-size: 0.7rem;
   }
 
   .iconWrapper {
@@ -1292,75 +1304,92 @@
   }
 
   .theoryBtn {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.65rem;
+    padding: 0.25rem 0.45rem;
+    font-size: 0.58rem;
   }
 
   .blockPalette {
-    max-height: 90px;
-    padding: 4px 6px;
+    max-height: 85px;
+    padding: 3px 4px;
   }
 
   .blockGrid {
-    gap: 3px;
+    gap: 2px;
   }
 
   .paletteBlock {
-    padding: 3px 4px;
-    min-height: 36px;
+    padding: 2px 3px;
+    min-height: 34px;
     border-radius: 5px;
   }
 
   .paletteBlockIcon {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 
   .paletteBlockLabel {
-    font-size: 0.48rem;
+    font-size: 0.42rem;
   }
 
   .canvasArea {
-    min-height: 180px;
+    min-height: 170px;
   }
 
   .canvasToolbar {
-    padding: 4px 6px;
-    gap: 3px;
+    padding: 3px 5px;
+    gap: 2px;
   }
 
   .mechTab {
-    padding: 4px 6px;
-    font-size: 0.58rem;
+    padding: 3px 6px;
+    font-size: 0.55rem;
     gap: 2px;
+    border-radius: 5px;
   }
 
   .clearBtn,
   .calcBtn {
-    padding: 4px 8px;
+    padding: 4px 7px;
+    font-size: 0.55rem;
+    border-radius: 5px;
+  }
+
+  .canvasHint {
     font-size: 0.6rem;
+    max-width: 160px;
   }
 
   .resultsPanel {
-    max-height: 130px;
-    padding: 6px 8px;
-    gap: 4px;
+    max-height: 120px;
+    padding: 4px 6px;
+    gap: 3px;
   }
 
   .resultsPanel > * {
-    min-width: 130px;
+    min-width: 120px;
+    font-size: 0.58rem;
   }
 
   .modalContent {
-    padding: 1rem;
+    padding: 0.8rem;
   }
 
   .modalTitle {
-    font-size: 1rem;
+    font-size: 0.85rem;
   }
 
   .formulaBox {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+
+  .closeBtn {
     padding: 0.5rem;
+    font-size: 0.72rem;
+  }
+
+  .tempLabel {
+    font-size: 1.4rem;
   }
 }
 
@@ -2834,4 +2863,61 @@
   font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 600;
+}
+
+/* ========== TOUCH OPTIMIZATIONS ========== */
+/* Prevent default touch actions that interfere with drag */
+.blockPalette,
+.paletteScroll,
+.paletteSection,
+.paletteBlock {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Larger touch targets for mobile */
+@media (max-width: 768px) {
+  .paletteBlock {
+    min-height: 44px;
+    touch-action: none;
+  }
+  
+  .paletteBlockIcon {
+    pointer-events: none;
+  }
+  
+  .simCanvas,
+  .canvasArea {
+    touch-action: pan-x pan-y;
+  }
+  
+  .calcBtn,
+  .clearBtn,
+  .mechTab {
+    min-height: 36px;
+    min-width: 36px;
+  }
+  
+  .draggingActive {
+    position: fixed;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+/* Very small screens touch */
+@media (max-width: 480px) {
+  .paletteBlock {
+    min-height: 38px;
+  }
+  
+  .calcBtn,
+  .clearBtn {
+    min-height: 32px;
+  }
+  
+  .mechTab {
+    min-height: 32px;
+  }
 }
