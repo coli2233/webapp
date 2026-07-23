@@ -427,29 +427,40 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
       // ══════════════════════════════════════════════════════
       //  INTERIOR  (right 45%)
       // ══════════════════════════════════════════════════════
+      // ── Interior base (dark background behind wall) ────────
       const intGrad = ctx.createLinearGradient(w * 0.55, 0, w * 0.55, h * 0.75);
       if (isIntCold) {
-        intGrad.addColorStop(0, '#bfdbfe'); intGrad.addColorStop(1, '#dbeafe');
+        intGrad.addColorStop(0, '#0f2540'); intGrad.addColorStop(1, '#162d48');
       } else if (isIntHot) {
-        intGrad.addColorStop(0, '#fde68a'); intGrad.addColorStop(1, '#fef3c7');
+        intGrad.addColorStop(0, '#3d1c0a'); intGrad.addColorStop(1, '#4a220c');
       } else {
-        intGrad.addColorStop(0, '#fef3c7'); intGrad.addColorStop(1, '#fdf6e3');
+        intGrad.addColorStop(0, '#2a1d12'); intGrad.addColorStop(1, '#3d2b1a');
       }
       ctx.fillStyle = intGrad;
       ctx.fillRect(w * 0.55, 0, w * 0.45, h * 0.74);
 
-      // Warm beige wallpaper with subtle texture
+      // ── Interior wall (dark warm contrast) ──────────────────
       const wallGrad = ctx.createLinearGradient(w * 0.55, 0, w * 0.55, h * 0.74);
-      wallGrad.addColorStop(0, '#e8dcc8');
-      wallGrad.addColorStop(0.5, '#f5ede0');
-      wallGrad.addColorStop(1, '#ede4d4');
+      if (isIntCold) {
+        wallGrad.addColorStop(0, '#1e3a5f');
+        wallGrad.addColorStop(0.5, '#1a3352');
+        wallGrad.addColorStop(1, '#162d48');
+      } else if (isIntHot) {
+        wallGrad.addColorStop(0, '#5c2a0e');
+        wallGrad.addColorStop(0.5, '#4a220c');
+        wallGrad.addColorStop(1, '#3d1c0a');
+      } else {
+        wallGrad.addColorStop(0, '#3d2b1a');
+        wallGrad.addColorStop(0.5, '#4a3320');
+        wallGrad.addColorStop(1, '#3d2b1a');
+      }
       ctx.fillStyle = wallGrad;
       ctx.fillRect(w * 0.55, 0, w * 0.45, h * 0.74);
 
-      // Wall vertical stripe texture
-      ctx.fillStyle = 'rgba(180,160,130,0.12)';
+      // Subtle texture on wall
+      ctx.fillStyle = 'rgba(0,0,0,0.06)';
       for (let x = w * 0.55; x < w; x += 30) ctx.fillRect(x, 0, 15, h * 0.74);
-      ctx.fillStyle = 'rgba(255,248,235,0.3)';
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
       for (let x = w * 0.55 + 15; x < w; x += 30) ctx.fillRect(x, 0, 15, h * 0.74);
 
       // ── Wall picture frame ─────────────────────────────────
@@ -524,24 +535,24 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
       ctx.quadraticCurveTo(winX - 12, winY + winH * 0.4, winX - 16, winY - 4);
       ctx.closePath(); ctx.fill();
 
-      // ── Ceiling cornice ───────────────────────────────────
-      ctx.fillStyle = '#ffffff';
+      // ── Ceiling cornice (matching wall) ─────────────────────
+      ctx.fillStyle = '#2a1d12';
       ctx.fillRect(w * 0.55, 0, w * 0.45, 18);
       const corniceGrad = ctx.createLinearGradient(0, 0, 0, 10);
       corniceGrad.addColorStop(0, 'rgba(0,0,0,0.08)'); corniceGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = corniceGrad; ctx.fillRect(w * 0.55, 18, w * 0.45, 10);
 
-      // ── Warm wood floor ────────────────────────────────────
+      // ── Light wood floor (contrasts dark wall) ──────────────
       const floorGrad = ctx.createLinearGradient(0, h * 0.74, 0, h);
-      floorGrad.addColorStop(0, '#b8976a');
-      floorGrad.addColorStop(0.4, '#a68550');
-      floorGrad.addColorStop(1, '#8b6914');
+      floorGrad.addColorStop(0, '#d4b896');
+      floorGrad.addColorStop(0.4, '#c8a882');
+      floorGrad.addColorStop(1, '#b8976a');
       ctx.fillStyle = floorGrad;
       ctx.fillRect(w * 0.55, h * 0.74, w * 0.45, h * 0.26);
       // Wood planks with varied tones
       for (let i = 0; i < 8; i++) {
         const plankX = w * 0.55 + i * w * 0.055;
-        const shade = i % 2 === 0 ? 'rgba(160,120,70,0.15)' : 'rgba(100,70,30,0.1)';
+        const shade = i % 2 === 0 ? 'rgba(200,170,120,0.2)' : 'rgba(140,100,50,0.12)';
         ctx.fillStyle = shade;
         ctx.fillRect(plankX, h * 0.74, w * 0.055, h * 0.26);
       }
@@ -756,6 +767,112 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
       [[-2, -78, 5], [8, -72, 4], [-8, -88, 4]].forEach(([ox, oy, r]) => {
         ctx.beginPath(); ctx.arc(tableX + ox, tableY + oy, r, 0, Math.PI * 2); ctx.fill();
       });
+
+      // ── INTERIOR ANIMATIONS ────────────────────────────────
+
+      // Floating dust particles in warm light
+      for (let i = 0; i < 15; i++) {
+        const dx = w * 0.56 + (i * 37 + Math.sin(frame * 0.018 + i * 2.1) * 80) % (w * 0.42);
+        const dy = h * 0.1 + (i * 29 + Math.cos(frame * 0.013 + i * 1.7) * 70) % (h * 0.6);
+        const dsize = 2 + Math.sin(frame * 0.04 + i) * 1;
+        ctx.fillStyle = isIntHot ? 'rgba(251,191,36,0.7)' : (isIntCold ? 'rgba(180,200,230,0.6)' : 'rgba(251,200,100,0.6)');
+        ctx.beginPath(); ctx.arc(dx, dy, dsize, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Animated warm light rays from lamp
+      ctx.save();
+      ctx.fillStyle = isIntHot ? 'rgba(251,191,36,0.12)' : (isIntCold ? 'rgba(148,163,184,0.06)' : 'rgba(251,220,100,0.09)');
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + frame * 0.005;
+        const rayLen = 90 + 30 * Math.sin(frame * 0.025 + i);
+        const x1 = lampX + Math.cos(angle) * 28;
+        const y1 = lampY + 18;
+        const x2 = lampX + Math.cos(angle) * rayLen;
+        const y2 = lampY + 18 + Math.sin(angle) * rayLen * 0.6;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2 - 6, y2);
+        ctx.lineTo(x2 + 6, y2);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Curtain gentle sway
+      ctx.fillStyle = 'rgba(180,80,60,0.2)';
+      const cs = Math.sin(frame * 0.02) * 5;
+      ctx.beginPath();
+      ctx.moveTo(winX - 14, winY + 10);
+      ctx.quadraticCurveTo(winX - 8 + cs, winY + winH * 0.4, winX - 3 + cs, winY + winH);
+      ctx.lineTo(winX - 18, winY + winH);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(winX + winW + 14, winY + 10);
+      ctx.quadraticCurveTo(winX + winW + 8 - cs, winY + winH * 0.4, winX + winW + 3 - cs, winY + winH);
+      ctx.lineTo(winX + winW + 18, winY + winH);
+      ctx.closePath(); ctx.fill();
+
+      // Temperature effects in interior
+      if (isIntHot) {
+        // Steam wisps rising
+        ctx.strokeStyle = 'rgba(251,191,36,0.5)';
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 5; i++) {
+          const sx = w * 0.62 + i * 22;
+          const sy = h * 0.68 - (frame * 0.5 + i * 20) % (h * 0.4);
+          ctx.globalAlpha = 0.4 - ((frame * 0.5 + i * 20) % (h * 0.4)) / (h * 0.4) * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.quadraticCurveTo(sx + Math.sin(frame * 0.04 + i) * 12, sy - 20, sx + Math.sin(frame * 0.03 + i) * 6, sy - 40);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // Warm glow on floor
+        const fa = 0.08 + 0.05 * Math.sin(frame * 0.12);
+        ctx.fillStyle = `rgba(251,146,36,${fa})`;
+        ctx.beginPath();
+        ctx.ellipse(w * 0.7, h * 0.85, 90 + Math.sin(frame * 0.12) * 15, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (isIntCold) {
+        // Frost shimmer on window
+        ctx.fillStyle = 'rgba(147,197,253,0.5)';
+        for (let i = 0; i < 10; i++) {
+          const fx = winX + 8 + (i * 6 + Math.sin(frame * 0.03 + i) * 4) % (winW - 16);
+          const fy = winY + 8 + (i * 8 + Math.cos(frame * 0.02 + i) * 3) % (winH - 16);
+          ctx.beginPath();
+          ctx.moveTo(fx, fy);
+          ctx.lineTo(fx + 3, fy - 6);
+          ctx.lineTo(fx + 6, fy);
+          ctx.lineTo(fx + 3, fy + 6);
+          ctx.closePath(); ctx.fill();
+        }
+
+        // Cold mist at bottom
+        ctx.fillStyle = 'rgba(147,197,253,0.08)';
+        for (let i = 0; i < 4; i++) {
+          const mx = w * 0.58 + i * 30 + Math.sin(frame * 0.01 + i) * 15;
+          const my = h * 0.68 + Math.sin(frame * 0.015 + i * 2) * 8;
+          ctx.beginPath(); ctx.ellipse(mx, my, 25, 8, 0, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      const clockX = w * 0.85, clockY = h * 0.45;
+      ctx.strokeStyle = 'rgba(120,80,40,0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(clockX, clockY, 18, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,248,235,0.6)';
+      ctx.beginPath(); ctx.arc(clockX, clockY, 16, 0, Math.PI * 2); ctx.fill();
+      // Clock hands
+      ctx.strokeStyle = 'rgba(60,40,20,0.5)';
+      ctx.lineWidth = 1.5;
+      const hourAngle = ((frame * 0.001) % (Math.PI * 2));
+      const minAngle = ((frame * 0.02) % (Math.PI * 2));
+      ctx.beginPath(); ctx.moveTo(clockX, clockY); ctx.lineTo(clockX + Math.cos(hourAngle) * 8, clockY + Math.sin(hourAngle) * 8); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(clockX, clockY); ctx.lineTo(clockX + Math.cos(minAngle) * 12, clockY + Math.sin(minAngle) * 12); ctx.stroke();
+      // Clock center dot
+      ctx.fillStyle = 'rgba(60,40,20,0.5)';
+      ctx.beginPath(); ctx.arc(clockX, clockY, 2, 0, Math.PI * 2); ctx.fill();
 
       // ── Labels ─────────────────────────────────────────────
       ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10;
