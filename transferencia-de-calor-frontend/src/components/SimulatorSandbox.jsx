@@ -42,6 +42,7 @@ export const SimulatorSandbox = ({ externalActiveMechanism, onMechanismChange })
   const [globalParams, setGlobalParams] = useState({ thickness: 0.1, area: 1, velocity: 2, emissivity: 0.85 });
   const [results, setResults] = useState(null);
   const [dragging, setDragging] = useState(null); // { blockType, x, y }
+  const [mobileTab, setMobileTab] = useState('sources'); // 'sources' | 'materials' | 'structures'
   const canvasRef = useRef(null);
   const animRef = useRef(null);
   const blockIdRef = useRef(0);
@@ -1350,69 +1351,97 @@ const finalIntHot = intSources.some(b => ['HEAT_SOURCE', 'SUN'].includes(b.type)
       {/* Left Panel - Block Palette */}
       <div className={styles.blockPalette}>
         <div className={styles.paletteTitle}>🧪 Bloques</div>
+
+        {/* Mobile Tabs */}
+        {isMobile() && (
+          <div className={styles.mobileTabs}>
+            <button
+              className={`${styles.mobileTab} ${mobileTab === 'sources' ? styles.mobileTabActive : ''}`}
+              onClick={() => setMobileTab('sources')}
+            >🔥 Fuentes</button>
+            <button
+              className={`${styles.mobileTab} ${mobileTab === 'materials' ? styles.mobileTabActive : ''}`}
+              onClick={() => setMobileTab('materials')}
+            >🧪 Materiales</button>
+            <button
+              className={`${styles.mobileTab} ${mobileTab === 'structures' ? styles.mobileTabActive : ''}`}
+              onClick={() => setMobileTab('structures')}
+            >🧱 Estructuras</button>
+          </div>
+        )}
+
         <div className={styles.paletteScroll}>
 
-          <div className={styles.paletteSection}>
-            <div className={styles.paletteSectionLabel}>Fuentes de Energía</div>
-            <div className={styles.blockGrid}>
-              {['HEAT_SOURCE', 'COLD_SOURCE', 'SUN'].map(id => {
-                const b = BLOCK_TYPES[id];
-                return (
-                  <div key={id} className={styles.paletteBlock}
-                    style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
-                    onMouseDown={(e) => handlePaletteMouseDown(e, id)}
-                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
-                  >
-                    <div className={styles.paletteBlockIcon}>{b.icon}</div>
-                    <div className={styles.paletteBlockLabel}>{b.label}</div>
-                    <div className={styles.paletteBlockDesc}>{b.tempRange ? `${b.tempRange[0]}°C a ${b.tempRange[1]}°C` : ''}</div>
-                  </div>
-                );
-              })}
+          {/* Fuentes de Energía */}
+          {(!isMobile() || mobileTab === 'sources') && (
+            <div className={styles.paletteSection}>
+              {!isMobile() && <div className={styles.paletteSectionLabel}>Fuentes de Energía</div>}
+              <div className={styles.blockGrid}>
+                {['HEAT_SOURCE', 'COLD_SOURCE', 'SUN'].map(id => {
+                  const b = BLOCK_TYPES[id];
+                  return (
+                    <div key={id} className={styles.paletteBlock}
+                      style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
+                      onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                      onTouchStart={(e) => handlePaletteTouchStart(e, id)}
+                    >
+                      <div className={styles.paletteBlockIcon}>{b.icon}</div>
+                      <div className={styles.paletteBlockLabel}>{b.label}</div>
+                      {!isMobile() && <div className={styles.paletteBlockDesc}>{b.tempRange ? `${b.tempRange[0]}°C a ${b.tempRange[1]}°C` : ''}</div>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className={styles.paletteSection}>
-            <div className={styles.paletteSectionLabel}>Materiales</div>
-            <div className={styles.blockGrid}>
-              {['CONDUCTOR', 'INSULATOR', 'CARDBOARD'].map(id => {
-                const b = BLOCK_TYPES[id];
-                return (
-                  <div key={id} className={styles.paletteBlock}
-                    style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
-                    onMouseDown={(e) => handlePaletteMouseDown(e, id)}
-                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
-                  >
-                    <div className={styles.paletteBlockIcon}>{b.icon}</div>
-                    <div className={styles.paletteBlockLabel}>{b.label}</div>
-                    {b.k && <div className={styles.paletteBlockK}>k={b.k}</div>}
-                  </div>
-                );
-              })}
+          {/* Materiales */}
+          {(!isMobile() || mobileTab === 'materials') && (
+            <div className={styles.paletteSection}>
+              {!isMobile() && <div className={styles.paletteSectionLabel}>Materiales</div>}
+              <div className={styles.blockGrid}>
+                {['CONDUCTOR', 'INSULATOR', 'CARDBOARD'].map(id => {
+                  const b = BLOCK_TYPES[id];
+                  return (
+                    <div key={id} className={styles.paletteBlock}
+                      style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
+                      onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                      onTouchStart={(e) => handlePaletteTouchStart(e, id)}
+                    >
+                      <div className={styles.paletteBlockIcon}>{b.icon}</div>
+                      <div className={styles.paletteBlockLabel}>{b.label}</div>
+                      {!isMobile() && b.k && <div className={styles.paletteBlockK}>k={b.k}</div>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className={styles.paletteSection}>
-            <div className={styles.paletteSectionLabel}>Estructuras</div>
-            <div className={styles.blockGrid}>
-              {['WALL', 'WINDOW'].map(id => {
-                const b = BLOCK_TYPES[id];
-                return (
-                  <div key={id} className={styles.paletteBlock}
-                    style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
-                    onMouseDown={(e) => handlePaletteMouseDown(e, id)}
-                    onTouchStart={(e) => handlePaletteTouchStart(e, id)}
-                  >
-                    <div className={styles.paletteBlockIcon}>{b.icon}</div>
-                    <div className={styles.paletteBlockLabel}>{b.label}</div>
-                    {b.k && <div className={styles.paletteBlockK}>k={b.k}</div>}
-                  </div>
-                );
-              })}
+          {/* Estructuras */}
+          {(!isMobile() || mobileTab === 'structures') && (
+            <div className={styles.paletteSection}>
+              {!isMobile() && <div className={styles.paletteSectionLabel}>Estructuras</div>}
+              <div className={styles.blockGrid}>
+                {['WALL', 'WINDOW'].map(id => {
+                  const b = BLOCK_TYPES[id];
+                  return (
+                    <div key={id} className={styles.paletteBlock}
+                      style={{ borderColor: b.color, backgroundColor: `${b.color}15` }}
+                      onMouseDown={(e) => handlePaletteMouseDown(e, id)}
+                      onTouchStart={(e) => handlePaletteTouchStart(e, id)}
+                    >
+                      <div className={styles.paletteBlockIcon}>{b.icon}</div>
+                      <div className={styles.paletteBlockLabel}>{b.label}</div>
+                      {!isMobile() && b.k && <div className={styles.paletteBlockK}>k={b.k}</div>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className={styles.paletteHint}>🖱️ Arrastra bloques al canvas</div>
+          {!isMobile() && <div className={styles.paletteHint}>🖱️ Arrastra bloques al canvas</div>}
         </div>
       </div>
 
